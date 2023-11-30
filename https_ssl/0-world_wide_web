@@ -1,22 +1,41 @@
 #!/usr/bin/env bash
-#
 display_info() {
-    local domain=$1
-    local subdomain=$2
-    local record_type=$(dig $subdomain.$domain +short)
-    local destination_ip=$(dig $subdomain.$domain +short)
+  local sub_domain="$1"
+  local domain="$2"
 
-    echo "The subdomain $subdomain is a $record_type record and points to $destination_ip"
+  # Use dig to get DNS information
+  local record_type=$(dig "$sub_domain.$domain" | awk '/ANSWER SECTION/ {getline; print $4}')
+  local destination=$(dig "$sub_domain.$domain" | awk '/ANSWER SECTION/ {getline; print $5}')
+
+  # Display information with record type check
+  if [ "$record_type" = "A" ]; then
+    echo "The subdomain $sub_domain is a A record and points to $destination"
+  else
+    echo "The subdomain $sub_domain is a $record_type record and points to $destination"
+  fi
 }
 
-if [ "$#" -eq 1 ]; then
-    subdomains=("www" "lb-01" "web-01" "web-02")
-    for sub_domain in "${subdomains[@]}"; do
-        display_info $1 $sub_domain
+main() {
+  local domain="$1"
+  local sub_domain="$2"
+
+  # Default subdomains to audit
+  local subdomains=("www" "lb-01" "web-01" "web-02")
+
+  # If a specific subdomain is provided, display information for that subdomain
+  if [ -n "$sub_domain" ]; then
+    display_info "$sub_domain" "$domain"
+  else
+    # Display information for default subdomains
+    for sub in "${subdomains[@]}"; do
+      display_info "$sub" "$domain"
     done
-elif [ "$#" -eq 2 ]; then
-    display_info $1 $2
-else
-    echo "Usage: $0 <domain> [subdomain]"
+  fi
+}
+
+# Check for correct number of arguments
+if [ "$#" -lt 1 ] || [ "$#" -gt 2 ]; then
+  echo "Usage: $0 <domain> [subdomain]"
+  exit 1
 fi
 
