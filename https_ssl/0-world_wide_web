@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+#bash script
 display_info() {
   local sub_domain="$1"
   local domain="$2"
