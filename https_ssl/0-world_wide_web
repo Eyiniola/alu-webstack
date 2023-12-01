@@ -1,42 +1,18 @@
 #!/usr/bin/env bash
-#bash script
-display_info() {
-  local sub_domain="$1"
-  local domain="$2"
+# ssl automation
 
-  # Use dig to get DNS information
-  local record_type=$(dig "$sub_domain.$domain" | awk '/ANSWER SECTION/ {getline; print $4}')
-  local destination=$(dig "$sub_domain.$domain" | awk '/ANSWER SECTION/ {getline; print $5}')
 
-  # Display information with record type check
-  if [ "$record_type" = "A" ]; then
-    echo "The subdomain $sub_domain is a A record and points to $destination"
-  else
-    echo "The subdomain $sub_domain is a $record_type record and points to $destination"
-  fi
-}
-
-main() {
-  local domain="$1"
-  local sub_domain="$2"
-
-  # Default subdomains to audit
-  local subdomains=("www" "lb-01" "web-01" "web-02")
-
-  # If a specific subdomain is provided, display information for that subdomain
-  if [ -n "$sub_domain" ]; then
-    display_info "$sub_domain" "$domain"
-  else
-    # Display information for default subdomains
-    for sub in "${subdomains[@]}"; do
-      display_info "$sub" "$domain"
-    done
-  fi
-}
-
-# Check for correct number of arguments
-if [ "$#" -lt 1 ] || [ "$#" -gt 2 ]; then
-  echo "Usage: $0 <domain> [subdomain]"
-  exit 1
+if [ $# == 2 ]; then
+    domain=$1
+    subdomain=$2
+    SUB_DOMAINS=$subdomain
+else
+    domain=$1
+    SUB_DOMAINS=("www" "lb-01" "web-01" "web-02")
 fi
 
+for sub in ${SUB_DOMAINS[@]}; do
+    record_type="$(dig "$sub.$domain" | grep -A1 'ANSWER SECTION:' | tail -1 | awk '{print $4}')"
+    destination=$(dig +short "$sub.$domain" | awk '{print $1}')
+    echo "The subdomain $sub is a $record_type record and points to $destination"
+done
