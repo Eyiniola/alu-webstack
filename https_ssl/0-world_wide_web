@@ -1,29 +1,18 @@
 #!/usr/bin/env bash
-# Configure your domain zone so that the subdomain www and display information about subdomains
-if [ "$#" -lt 1 ] || [ "$#" -gt 2 ]; then
-    echo "Usage: $0 <domain> [subdomain]"
-    exit 1
+# bash file for the work
+
+
+if [ $# == 2 ]; then
+    domain=$1
+    subdomain=$2
+    SUB_DOMAINS=$subdomain
+else
+    domain=$1
+    SUB_DOMAINS=("www" "lb-01" "web-01" "web-02")
 fi
 
-domain="$1"
-
-if [ "$#" -eq 1 ]; then
-    subdomains=("www" "lb-01" "web-01" "web-02")
-    for sub_domain in "${subdomains[@]}"; do
-        result=$(dig "$sub_domain.$domain" +short)
-        if [ -n "$result" ]; then
-            echo "The subdomain $sub_domain points to $result"
-        else
-            echo "Unable to retrieve information for subdomain $sub_domain"
-        fi
-    done
-elif [ "$#" -eq 2 ]; then
-    sub_domain="$2"
-    result=$(dig "$sub_domain.$domain" +short)
-    if [ -n "$result" ]; then
-        echo "The subdomain $sub_domain points to $result"
-    else
-        echo "Unable to retrieve information for subdomain $sub_domain"
-    fi
-fi
-
+for sub in ${SUB_DOMAINS[@]}; do
+    record_type="$(dig "$sub.$domain" | grep -A1 'ANSWER SECTION:' | tail -1 | awk '{print $4}')"
+    destination=$(dig +short "$sub.$domain" | awk '{print $1}')
+    echo "The subdomain $sub is a $record_type record and points to $destination"
+done
